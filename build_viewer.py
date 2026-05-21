@@ -329,8 +329,10 @@ const isMobile='ontouchstart'in window&&innerWidth<768;
 let debounceTimer=null;
 const debounce=(fn,ms)=>(...a)=>{clearTimeout(debounceTimer);debounceTimer=setTimeout(()=>fn(...a),ms)};
 
-const fD=s=>{if(!s)return'?';const d=new Date(s);return d.toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})};
-const relDay=s=>{if(!s)return'later';const d=new Date(s),n=new Date(),diff=Math.floor((d-n)/(864e5));if(diff<0)return'past';if(diff===0)return'today';if(diff===1)return'tomorrow';if(diff<=7)return'week';if(diff<=30)return'month';return'later'};
+const fD=s=>{if(!s)return'?';const d=new Date(s);return d.toLocaleString('en-US',{timeZone:'America/Los_Angeles',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})};
+const PST=-8,PDT=-7,TZ_OFF=PDT;
+function toPST(d){return new Date(d.getTime()+(d.getTimezoneOffset()+TZ_OFF*60)*60000)}
+const relDay=s=>{if(!s)return'later';const d=toPST(new Date(s)),n=toPST(new Date());const ed=new Date(d.getFullYear(),d.getMonth(),d.getDate()),td=new Date(n.getFullYear(),n.getMonth(),n.getDate());const diff=Math.round((ed-td)/864e5);if(diff<0)return'past';if(diff===0)return'today';if(diff===1)return'tomorrow';if(diff<=7)return'week';if(diff<=30)return'month';return'later'};
 const st=e=>e.sold_out?'sold':e.waitlist_active?'waitlist':'open';
 const stL=s=>({sold:'Sold out',waitlist:'Waitlist',open:'Open'})[s];
 const scC=n=>n>=80?'#22c55e':n>=50?'#eab308':'#334155';
