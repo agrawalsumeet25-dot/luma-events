@@ -119,6 +119,7 @@ def main() -> int:
     results["scrape"] = run_step("scrape", "scrape_luma_recursive.py", timeout_min=10)
     results["second_pass"] = run_step("second_pass", "second_pass.py", timeout_min=8)
     results["score"] = run_step("score", "score_events.py", timeout_min=5)
+    results["prep"] = run_step("prep", "prep_events.py", timeout_min=5)
     results["build"] = run_step("build", "build_viewer.py", timeout_min=2)
     results["copy"] = copy_to_docs()
     results["git"] = git_push()

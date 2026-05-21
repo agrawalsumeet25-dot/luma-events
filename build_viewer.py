@@ -140,6 +140,7 @@ def slim(records: list[dict]) -> list[dict]:
                                 for g in guests][:8],
             "url": rsvp_url,
             "scores": r.get("scores") or {},
+            "prep": r.get("prep") or {},
         })
     if dropped:
         print(f"  dropped {dropped} past events", flush=True)
@@ -296,7 +297,16 @@ h1{font-family:'Outfit',sans-serif;font-size:28px;font-weight:800;letter-spacing
 .guests{display:flex;margin:10px 0}.guests img{width:28px;height:28px;border-radius:50%;border:2px solid #0f172a;margin-left:-6px;object-fit:cover}.guests img:first-child{margin-left:0}
 .close{position:absolute;top:14px;right:14px;background:rgba(0,0,0,.45);color:#fff;width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.08);cursor:pointer;font-size:18px;z-index:2;display:flex;align-items:center;justify-content:center;transition:all .2s;backdrop-filter:blur(8px)}.close:hover{background:rgba(220,38,38,.6)}
 
-/* Confetti canvas */
+/* ── Prep section ─────────────────────────────────────────────────────── */
+.prep-section{margin:16px 0;padding:16px;background:rgba(30,41,59,.3);border:1px solid rgba(100,116,139,.1);border-radius:12px}
+.prep-section h3{font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.prep-news{list-style:none;padding:0;margin:0 0 14px}
+.prep-news li{font-size:13px;color:#cbd5e1;line-height:1.5;padding:6px 0 6px 16px;position:relative;border-bottom:1px solid rgba(100,116,139,.06)}
+.prep-news li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:#22c55e}
+.prep-news li:last-child{border-bottom:none}
+.prep-starters{list-style:none;padding:0;margin:0}
+.prep-starters li{font-size:13px;color:#e2e8f0;line-height:1.5;padding:8px 12px;margin-bottom:6px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.12);border-radius:8px;cursor:default;transition:background .2s}
+.prep-starters li:hover{background:rgba(124,58,237,.15)}
 #confetti{position:fixed;inset:0;pointer-events:none;z-index:200}
 
 /* Keyboard hint */
@@ -434,12 +444,20 @@ function scoresHtml(e){
   const sc=e.scores||{};const names=Object.keys(sc);if(!names.length)return'';
   return `<div class="modal-scores">${names.map(n=>{const s=sc[n]||{};const v=s.score||0;return `<div class="modal-score-item"><div class="name">${esc(n)}</div>${ring(v,'sm')}<div class="why">${esc(s.reason||'')}</div></div>`}).join('')}</div>`;
 }
+function prepHtml(e){
+  const p=e.prep||{};const news=p.news||[];const st=p.starters||[];
+  if(!news.length&&!st.length)return'';
+  let h='';
+  if(news.length)h+=`<div class="prep-section"><h3>Latest on this topic</h3><ul class="prep-news">${news.map(n=>`<li>${esc(n)}</li>`).join('')}</ul></div>`;
+  if(st.length)h+=`<div class="prep-section"><h3>Conversation starters</h3><ul class="prep-starters">${st.map(s=>`<li>${esc(s)}</li>`).join('')}</ul></div>`;
+  return h;
+}
 function openModal(id){
   const e=E.find(x=>x.id===id);if(!e)return;
   const s=st(e);const cov=e.cover_url?`style="background-image:url('${esc(e.cover_url)}');background-color:${esc(e.tint)}"`:`style="background-color:${esc(e.tint)}"`;
   const guests=(e.featured_guests||[]).map(g=>`<img src="${esc(g.avatar||'')}" title="${esc(g.name||'')}" alt=""/>`).join('');
   const desc=e.description_html||'<p style="color:#475569">No description.</p>';
-  S('#modal').innerHTML=`<div class="modal-wrap"><button class="close" onclick="closeModal()">&times;</button><div class="modal"><div class="cover" ${cov}><div class="badges"><span class="badge ${s}">${stL(s)}</span></div></div><div class="modal-body"><h2>${esc(e.name||'?')}</h2><div class="meta"><div class="row">${iconCal()} ${esc(fD(e.start_at))}</div><div class="row">${iconPin()} ${esc(e.full_address||e.venue||e.city||'')}</div></div>${scoresHtml(e)}${guests?`<div class="guests">${guests}</div>`:''}<div class="desc">${desc}</div><div class="actions"><a class="btn" href="${esc(e.url)}" target="_blank" rel="noopener" onclick="confetti(event)">RSVP on Luma</a><button class="btn ghost" onclick="closeModal()">Close</button></div></div></div></div>`;
+  S('#modal').innerHTML=`<div class="modal-wrap"><button class="close" onclick="closeModal()">&times;</button><div class="modal"><div class="cover" ${cov}><div class="badges"><span class="badge ${s}">${stL(s)}</span></div></div><div class="modal-body"><h2>${esc(e.name||'?')}</h2><div class="meta"><div class="row">${iconCal()} ${esc(fD(e.start_at))}</div><div class="row">${iconPin()} ${esc(e.full_address||e.venue||e.city||'')}</div></div>${scoresHtml(e)}${prepHtml(e)}${guests?`<div class="guests">${guests}</div>`:''}<div class="desc">${desc}</div><div class="actions"><a class="btn" href="${esc(e.url)}" target="_blank" rel="noopener" onclick="confetti(event)">RSVP on Luma</a><button class="btn ghost" onclick="closeModal()">Close</button></div></div></div></div>`;
   S('#modalBg').classList.add('open');document.body.style.overflow='hidden';
 }
 function closeModal(){S('#modalBg').classList.remove('open');document.body.style.overflow=''}
