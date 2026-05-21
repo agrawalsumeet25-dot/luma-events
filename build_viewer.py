@@ -72,10 +72,30 @@ def latest_dump() -> Path:
 
 def slim(records: list[dict]) -> list[dict]:
     out: list[dict] = []
+    now_utc = datetime.now(timezone.utc)
+    dropped = 0
     for r in records:
         ev = (r.get("list_entry") or {}).get("event") or {}
         det = r.get("detail") or {}
         det_ev = det.get("event") or {}
+
+        # Drop past events: use end_at if available, else start_at + 3h buffer
+        end_str = ev.get("end_at") or det_ev.get("end_at")
+        start_str = ev.get("start_at") or det_ev.get("start_at")
+        try:
+            if end_str:
+                end_dt = datetime.fromisoformat(end_str.replace("Z", "+00:00"))
+                if end_dt < now_utc:
+                    dropped += 1
+                    continue
+            elif start_str:
+                start_dt = datetime.fromisoformat(start_str.replace("Z", "+00:00"))
+                if start_dt + timedelta(hours=3) < now_utc:
+                    dropped += 1
+                    continue
+        except (ValueError, TypeError):
+            pass
+
         cal = det.get("calendar") or {}
         geo = ev.get("geo_address_info") or det_ev.get("geo_address_info") or {}
         ti = det.get("ticket_info") or {}
@@ -121,6 +141,8 @@ def slim(records: list[dict]) -> list[dict]:
             "url": rsvp_url,
             "scores": r.get("scores") or {},
         })
+    if dropped:
+        print(f"  dropped {dropped} past events", flush=True)
     return out
 
 
@@ -383,7 +405,7 @@ function filterAndRender(){
   const grid=S('#grid');
   const groups={today:[],tomorrow:[],week:[],month:[],later:[],past:[]};
   list.forEach(e=>{const g=relDay(e.start_at);(groups[g]||groups.later).push(e)});
-  const labels={today:'Happening Today',tomorrow:'Tomorrow',week:'This Week',month:'This Month',later:'Later',past:'Past'};
+  const labels={today:'Happening Today',tomorrow:'Tomorrow',week:'This Week',month:'This Month',later:'Later'};
 
   // Build HTML with section wrappers for lazy reveal
   const frag=document.createDocumentFragment();
