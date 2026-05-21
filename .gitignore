@@ -1,0 +1,15 @@
+# Byte-compiled
+__pycache__/
+*.pyc
+
+# Output data (large JSON dumps + generated HTML)
+output/*.json
+output/*.html
+output/*.log
+
+# Environment
+.env
+*.env
+
+# Scores cache (regenerated on each run)
+output/scores_cache.json
