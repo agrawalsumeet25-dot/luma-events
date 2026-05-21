@@ -69,13 +69,17 @@ h1{font-family:'Outfit',sans-serif;font-size:28px;font-weight:800;letter-spacing
 .section-header{font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;color:#94a3b8;margin:28px 0 14px;padding-bottom:8px;border-bottom:1px solid rgba(100,116,139,.1);display:flex;align-items:center;gap:8px}
 .section-header .dot{width:8px;height:8px;border-radius:50%;background:#22c55e;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.section{opacity:0;transform:translateY(12px);transition:opacity .4s,transform .4s}
+.section.visible{opacity:1;transform:translateY(0)}
+.section .grid .card{opacity:0;transform:translateY(8px);transition:opacity .3s,transform .3s}
+.section.visible .grid .card{opacity:1;transform:translateY(0)}
 
 /* Card grid */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
 @media(max-width:700px){.grid{grid-template-columns:1fr}}
-.card{background:rgba(15,23,42,.65);border:1px solid rgba(100,116,139,.08);border-radius:16px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;transition:transform .3s cubic-bezier(.22,1,.36,1),border-color .3s,box-shadow .3s;transform-style:preserve-3d}
-.card:hover{transform:translateY(-4px);border-color:rgba(124,58,237,.2);box-shadow:0 16px 48px rgba(0,0,0,.25),0 0 0 1px rgba(124,58,237,.08)}
-.cover{height:160px;background-size:cover;background-position:center;background-color:#1e293b;position:relative}
+.card{background:rgba(15,23,42,.65);border:1px solid rgba(100,116,139,.08);border-radius:16px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;transition:transform .3s cubic-bezier(.22,1,.36,1),border-color .3s,box-shadow .3s;transform-style:preserve-3d;contain:layout style}
+.card:hover{transform:translateY(-4px);border-color:rgba(124,58,237,.2);box-shadow:0 16px 48px rgba(0,0,0,.25),0 0 0 1px rgba(124,58,237,.08);will-change:transform}
+.cover{height:160px;background-size:cover;background-position:center;background-color:#1e293b;position:relative;contain:layout style paint}
 .cover .ring-wrap{position:absolute;top:10px;left:10px;z-index:2}
 .badges{position:absolute;top:10px;right:10px;display:flex;gap:5px}
 .badge{background:rgba(0,0,0,.55);backdrop-filter:blur(8px);color:#fff;font-size:10px;font-weight:600;padding:4px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em}
@@ -254,6 +258,8 @@ const E=window.__EVENTS__,S=s=>document.querySelector(s),SA=s=>document.querySel
 let mode='discover',activePerson=null,picks=[],undoStack=[];
 const cityF=new Set(),catF=new Set(),statusF=new Set();
 const isMobile='ontouchstart'in window&&innerWidth<768;
+let debounceTimer=null;
+const debounce=(fn,ms)=>(...a)=>{clearTimeout(debounceTimer);debounceTimer=setTimeout(()=>fn(...a),ms)};
 
 const fD=s=>{if(!s)return'?';const d=new Date(s);return d.toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})};
 const relDay=s=>{if(!s)return'later';const d=new Date(s),n=new Date(),diff=Math.floor((d-n)/(864e5));if(diff<0)return'past';if(diff===0)return'today';if(diff===1)return'tomorrow';if(diff<=7)return'week';if(diff<=30)return'month';return'later'};
@@ -277,8 +283,9 @@ function buildCard(e){
   const cov=e.cover_url?`style="background-image:url('${esc(e.cover_url)}');background-color:${esc(e.tint)}"`:`style="background-color:${esc(e.tint)}"`;
   const hn=e.calendar_name||(e.hosts[0]||{}).name||'';
   const ha=e.calendar_avatar||(e.hosts[0]||{}).avatar||'';
-  const cats=(e.categories||[]).map(c=>`<span class="cat">${esc(c)}</span>`).join('');
-  return `<div class="card" data-id="${esc(e.id)}" tabindex="0"><div class="cover" ${cov}>${activePerson?`<div style="position:absolute;top:10px;left:10px;z-index:2">${ring(sc,'sm')}</div>`:''}<div class="badges"><span class="badge ${s}">${stL(s)}</span></div></div><div class="body"><div class="title">${esc(e.name||'?')}</div><div class="meta"><div class="row">${iconCal()} ${esc(fD(e.start_at))}</div><div class="row">${iconPin()} ${esc(e.venue||e.city||'?')}${e.city&&e.venue?', '+esc(e.city):''}</div></div><div class="cats">${cats}</div><div class="host">${ha?`<img src="${esc(ha)}" alt=""/>`:''}by ${esc(hn)}</div><div class="rsvp-strip"><span class="rsvp-count">${(e.guest_count||0).toLocaleString()} <span>RSVPs</span></span></div></div></div>`;
+  const cats=(e.categories||[]).slice(0,3).map(c=>`<span class="cat">${esc(c)}</span>`).join('');
+  const ringPlaceholder=activePerson?`<div class="ring-placeholder" data-score="${sc}" style="position:absolute;top:10px;left:10px;z-index:2;width:42px;height:42px"></div>`:'';
+  return `<div class="card" data-id="${esc(e.id)}" tabindex="0"><div class="cover" ${cov}>${ringPlaceholder}<div class="badges"><span class="badge ${s}">${stL(s)}</span></div></div><div class="body"><div class="title">${esc(e.name||'?')}</div><div class="meta"><div class="row">${iconCal()} ${esc(fD(e.start_at))}</div><div class="row">${iconPin()} ${esc(e.venue||e.city||'?')}${e.city&&e.venue?', '+esc(e.city):''}</div></div><div class="cats">${cats}</div><div class="host">${ha?`<img src="${esc(ha)}" loading="lazy" alt=""/>`:''}by ${esc(hn)}</div><div class="rsvp-strip"><span class="rsvp-count">${(e.guest_count||0).toLocaleString()} <span>RSVPs</span></span></div></div></div>`;
 }
 
 /* ── Hero ─────────────────────────────────────────────────────────────── */
@@ -296,6 +303,24 @@ function renderHero(){
 }
 
 /* ── Discover mode ────────────────────────────────────────────────────── */
+const sectionObs=new IntersectionObserver((entries)=>{
+  entries.forEach(entry=>{
+    if(entry.isIntersecting){
+      entry.target.classList.add('visible');
+      // Stagger card animations
+      const cards=entry.target.querySelectorAll('.card');
+      cards.forEach((c,i)=>{c.style.transitionDelay=`${Math.min(i*40,400)}ms`});
+      // Hydrate score ring placeholders
+      entry.target.querySelectorAll('.ring-placeholder').forEach(ph=>{
+        const sc=parseInt(ph.dataset.score)||0;
+        ph.innerHTML=ring(sc,'sm');
+        ph.classList.remove('ring-placeholder');
+      });
+      sectionObs.unobserve(entry.target);
+    }
+  });
+},{rootMargin:'100px 0px',threshold:0.01});
+
 function filterAndRender(){
   let list=E.slice();
   const q=(S('#search').value||'').toLowerCase().trim();
@@ -313,13 +338,22 @@ function filterAndRender(){
   const groups={today:[],tomorrow:[],week:[],month:[],later:[],past:[]};
   list.forEach(e=>{const g=relDay(e.start_at);(groups[g]||groups.later).push(e)});
   const labels={today:'Happening Today',tomorrow:'Tomorrow',week:'This Week',month:'This Month',later:'Later',past:'Past'};
-  let h='';
+
+  // Build HTML with section wrappers for lazy reveal
+  const frag=document.createDocumentFragment();
   for(const[k,lbl]of Object.entries(labels)){
     const evts=groups[k];if(!evts||!evts.length)continue;
+    const section=document.createElement('div');
+    section.className='section';
     const dot=k==='today'?'<span class="dot"></span>':'';
-    h+=`<div class="section-header">${dot}${lbl} <span style="color:#334155;font-weight:400;font-size:13px">(${evts.length})</span></div><div class="grid">${evts.map(buildCard).join('')}</div>`;
+    section.innerHTML=`<div class="section-header">${dot}${lbl} <span style="color:#334155;font-weight:400;font-size:13px">(${evts.length})</span></div><div class="grid">${evts.map(buildCard).join('')}</div>`;
+    frag.appendChild(section);
+    // Observe AFTER appending to DOM
+    requestAnimationFrame(()=>sectionObs.observe(section));
   }
-  grid.innerHTML=h;
+  grid.innerHTML='';
+  grid.appendChild(frag);
+
   S('#count').textContent=`${list.length} of ${E.length} events`;
   SA('.card').forEach(c=>{c.addEventListener('click',()=>openModal(c.dataset.id));c.addEventListener('keydown',ev=>{if(ev.key==='Enter')openModal(c.dataset.id)})});
   renderHero();
@@ -464,7 +498,7 @@ window.closeModal=closeModal;window.openModal=openModal;window.undoSwipe=undoSwi
 S('#modalBg').addEventListener('click',e=>{if(e.target.id==='modalBg')closeModal()});
 S('#cmdBg').addEventListener('click',e=>{if(e.target.id==='cmdBg')closeCmd()});
 S('#cmdInput').addEventListener('input',e=>cmdSearch(e.target.value));
-S('#search').addEventListener('input',filterAndRender);
+S('#search').addEventListener('input',debounce(filterAndRender,150));
 S('#sort').addEventListener('change',()=>{const v=S('#sort').value;if(v!=='date'&&v!=='rsvps'&&v!=='name'){activePerson=v;SA('.person-chip').forEach(x=>x.classList.toggle('active',x.textContent.toLowerCase()===v))}filterAndRender()});
 SA('.mode-btn').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
 buildChips();
