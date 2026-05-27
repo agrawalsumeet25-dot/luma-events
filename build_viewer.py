@@ -189,6 +189,22 @@ h1{font-family:'Outfit',sans-serif;font-size:28px;font-weight:800;letter-spacing
 .person-chip{background:rgba(30,41,59,.5);color:#94a3b8;border:1px solid rgba(100,116,139,.1);border-radius:999px;padding:6px 16px;font-size:13px;font-weight:600;cursor:pointer;user-select:none;transition:all .25s}
 .person-chip:hover{background:rgba(51,65,85,.5);color:#e2e8f0}
 .person-chip.active{background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border-color:transparent;box-shadow:0 4px 16px rgba(124,58,237,.3)}
+.date-range{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.date-range label{font-size:11px;color:#475569;font-weight:600}
+.date-range input[type=date]{background:rgba(2,6,23,.7);color:#e2e8f0;border:1px solid rgba(100,116,139,.15);border-radius:10px;padding:8px 12px;font-size:12px;font-family:inherit;outline:none;cursor:pointer;color-scheme:dark;transition:border-color .2s,box-shadow .2s}
+.date-range input[type=date]:focus{border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.15)}
+.date-quick{display:flex;gap:4px}
+.date-quick button{background:rgba(30,41,59,.5);color:#94a3b8;border:1px solid rgba(100,116,139,.1);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit}
+.date-quick button:hover{background:rgba(51,65,85,.5);color:#e2e8f0}
+.date-quick button.active{background:linear-gradient(135deg,#0ea5e9,#06b6d4);color:#fff;border-color:transparent}
+.score-slider{display:none;align-items:center;gap:10px;width:100%;padding:8px 0}
+.score-slider.show{display:flex}
+.score-slider label{font-size:11px;color:#a78bfa;font-weight:700;white-space:nowrap}
+.score-slider input[type=range]{flex:1;height:6px;-webkit-appearance:none;appearance:none;background:linear-gradient(90deg,rgba(71,85,105,.4),rgba(124,58,237,.3));border-radius:3px;outline:none;cursor:pointer;transition:background .2s}
+.score-slider input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a855f7);cursor:pointer;box-shadow:0 2px 12px rgba(124,58,237,.5);transition:transform .15s}
+.score-slider input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15)}
+.score-slider input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a855f7);cursor:pointer;border:none}
+.score-slider .val{font-family:'Outfit',sans-serif;font-size:18px;font-weight:800;color:#a78bfa;min-width:32px;text-align:center}
 .count{margin:12px 0 8px;color:#475569;font-size:12px;font-weight:500}
 
 /* Hero */
@@ -333,7 +349,7 @@ h1{font-family:'Outfit',sans-serif;font-size:28px;font-weight:800;letter-spacing
 # ── JS ────────────────────────────────────────────────────────────────────────
 JS = r"""
 const E=window.__EVENTS__,S=s=>document.querySelector(s),SA=s=>document.querySelectorAll(s);
-let mode='discover',activePerson=null,picks=[],undoStack=[];
+let mode='discover',activePerson=null,picks=[],undoStack=[],scoreThreshold=0;
 const cityF=new Set(),catF=new Set(),statusF=new Set();
 const isMobile='ontouchstart'in window&&innerWidth<768;
 let debounceTimer=null;
@@ -408,6 +424,14 @@ function filterAndRender(){
   if(cityF.size)list=list.filter(e=>cityF.has(e.city||'TBD'));
   if(catF.size)list=list.filter(e=>(e.categories||[]).some(c=>catF.has(c)));
   if(statusF.size)list=list.filter(e=>statusF.has(st(e)));
+
+  // Date range filter
+  const df=S('#dateFrom').value,dt=S('#dateTo').value;
+  if(df){const from=new Date(df+'T00:00:00');list=list.filter(e=>{const d=new Date(e.start_at);return d>=from})}
+  if(dt){const to=new Date(dt+'T23:59:59');list=list.filter(e=>{const d=new Date(e.start_at);return d<=to})}
+
+  // Score threshold filter (only when person is active)
+  if(activePerson&&scoreThreshold>0)list=list.filter(e=>gS(e,activePerson)>=scoreThreshold);
   const sv=S('#sort').value;
   if(sv==='date')list.sort((a,b)=>(a.start_at||'').localeCompare(b.start_at||''));
   else if(sv==='rsvps')list.sort((a,b)=>(b.guest_count||0)-(a.guest_count||0));
@@ -531,6 +555,21 @@ function confetti(evt){
 }
 window.confetti=confetti;
 
+/* ── Date quick-select ─────────────────────────────────────────────────── */
+function setDateRange(preset){
+  const df=S('#dateFrom'),dt=S('#dateTo');
+  const now=new Date();
+  const fmt=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  SA('.date-quick button').forEach(b=>b.classList.remove('active'));
+  if(preset==='today'){df.value=fmt(now);dt.value=fmt(now)}
+  else if(preset==='week'){df.value=fmt(now);const end=new Date(now);end.setDate(end.getDate()+7);dt.value=fmt(end)}
+  else if(preset==='month'){df.value=fmt(now);const end=new Date(now);end.setMonth(end.getMonth()+1);dt.value=fmt(end)}
+  else{df.value='';dt.value=''}
+  event.target.classList.add('active');
+  filterAndRender();
+}
+window.setDateRange=setDateRange;
+
 /* ── Mode toggle ──────────────────────────────────────────────────────── */
 function setMode(m){
   mode=m;
@@ -558,7 +597,7 @@ function buildChips(){
   E.forEach(e=>Object.keys(e.scores||{}).forEach(n=>people.add(n)));
   [...people].sort().forEach(p=>{
     const el=document.createElement('span');el.className='person-chip';el.textContent=p[0].toUpperCase()+p.slice(1);
-    el.onclick=()=>{if(activePerson===p){activePerson=null;el.classList.remove('active');S('#sort').value='date'}else{activePerson=p;pRow.querySelectorAll('.person-chip').forEach(x=>x.classList.remove('active'));el.classList.add('active');S('#sort').value=p}if(mode==='discover')filterAndRender();else initSwipe()};
+    el.onclick=()=>{if(activePerson===p){activePerson=null;el.classList.remove('active');S('#sort').value='date';S('#scoreSlider').classList.remove('show');scoreThreshold=0;S('#scoreRange').value=0;S('#scoreVal').textContent='0'}else{activePerson=p;pRow.querySelectorAll('.person-chip').forEach(x=>x.classList.remove('active'));el.classList.add('active');S('#sort').value=p;S('#scoreSlider').classList.add('show');scoreThreshold=parseInt(S('#scoreRange').value)}if(mode==='discover')filterAndRender();else initSwipe()};
     pRow.appendChild(el);
   });
   const cRow=S('#cityChips');[...cities.entries()].sort((a,b)=>b[1]-a[1]).forEach(([c,n])=>{const el=document.createElement('span');el.className='chip';el.textContent=`${c} (${n})`;el.onclick=()=>{cityF.has(c)?cityF.delete(c):cityF.add(c);el.classList.toggle('active');filterAndRender()};cRow.appendChild(el)});
@@ -587,6 +626,9 @@ S('#modalBg').addEventListener('click',e=>{if(e.target.id==='modalBg')closeModal
 S('#cmdBg').addEventListener('click',e=>{if(e.target.id==='cmdBg')closeCmd()});
 S('#cmdInput').addEventListener('input',e=>cmdSearch(e.target.value));
 S('#search').addEventListener('input',debounce(filterAndRender,150));
+S('#dateFrom').addEventListener('change',filterAndRender);
+S('#dateTo').addEventListener('change',filterAndRender);
+S('#scoreRange').addEventListener('input',e=>{scoreThreshold=parseInt(e.target.value);S('#scoreVal').textContent=scoreThreshold;filterAndRender()});
 S('#sort').addEventListener('change',()=>{const v=S('#sort').value;if(v!=='date'&&v!=='rsvps'&&v!=='name'){activePerson=v;SA('.person-chip').forEach(x=>x.classList.toggle('active',x.textContent.toLowerCase()===v))}filterAndRender()});
 SA('.mode-btn').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
 buildChips();
@@ -640,7 +682,22 @@ def build_html(data: dict, slimmed: list[dict]) -> str:
       <option value="ayushi">Ayushi</option>
       <option value="name">Name</option>
     </select></label>
+    <div class="date-range">
+      <label>From</label><input type="date" id="dateFrom"/>
+      <label>To</label><input type="date" id="dateTo"/>
+      <div class="date-quick">
+        <button onclick="setDateRange('today')">Today</button>
+        <button onclick="setDateRange('week')">This Week</button>
+        <button onclick="setDateRange('month')">This Month</button>
+        <button onclick="setDateRange('all')" class="active">All</button>
+      </div>
+    </div>
     <div class="person-chips" id="personChips"><span class="label">For:</span></div>
+    <div class="score-slider" id="scoreSlider">
+      <label>Min score</label>
+      <input type="range" id="scoreRange" min="0" max="100" value="0"/>
+      <span class="val" id="scoreVal">0</span>
+    </div>
     <div class="chips" id="statusChips"></div>
     <div class="chips" id="catChips"></div>
     <div class="chips" id="cityChips"></div>
