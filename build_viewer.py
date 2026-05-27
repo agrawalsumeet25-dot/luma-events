@@ -205,6 +205,25 @@ h1{font-family:'Outfit',sans-serif;font-size:28px;font-weight:800;letter-spacing
 .score-slider input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15)}
 .score-slider input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a855f7);cursor:pointer;border:none}
 .score-slider .val{font-family:'Outfit',sans-serif;font-size:18px;font-weight:800;color:#a78bfa;min-width:32px;text-align:center}
+
+/* Going state */
+.card.going{border-color:rgba(34,197,94,.3);box-shadow:0 0 0 1px rgba(34,197,94,.15)}
+.card.going .going-badge{display:flex}
+.going-badge{display:none;position:absolute;bottom:10px;left:10px;z-index:2;background:rgba(34,197,94,.9);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:999px;align-items:center;gap:4px;text-transform:uppercase;letter-spacing:.05em;backdrop-filter:blur(8px)}
+.going-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.2);padding:9px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit}
+.going-btn:hover{background:rgba(34,197,94,.2);border-color:rgba(34,197,94,.35)}
+.going-btn.active{background:rgba(34,197,94,.9);color:#fff;border-color:transparent}
+.going-btn svg{width:16px;height:16px}
+.cal-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(14,165,233,.1);color:#0ea5e9;border:1px solid rgba(14,165,233,.2);padding:9px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;text-decoration:none;font-family:inherit}
+.cal-btn:hover{background:rgba(14,165,233,.2);color:#38bdf8}
+.my-events{margin:16px 0;padding:16px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.12);border-radius:14px;display:none}
+.my-events.show{display:block}
+.my-events h3{font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;color:#22c55e;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.my-events-list{display:flex;flex-wrap:wrap;gap:6px}
+.my-event-chip{background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.15);border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px}
+.my-event-chip:hover{background:rgba(34,197,94,.2)}
+.my-event-chip .remove{color:rgba(255,255,255,.5);font-size:14px;cursor:pointer}
+.my-event-chip .remove:hover{color:#ef4444}
 .count{margin:12px 0 8px;color:#475569;font-size:12px;font-weight:500}
 
 /* Hero */
@@ -241,7 +260,7 @@ h1{font-family:'Outfit',sans-serif;font-size:28px;font-weight:800;letter-spacing
 .card{background:rgba(15,23,42,.65);border:1px solid rgba(100,116,139,.08);border-radius:16px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;transition:transform .3s cubic-bezier(.22,1,.36,1),border-color .3s,box-shadow .3s;transform-style:preserve-3d;contain:layout style}
 .card:hover{transform:translateY(-4px);border-color:rgba(124,58,237,.2);box-shadow:0 16px 48px rgba(0,0,0,.25),0 0 0 1px rgba(124,58,237,.08);will-change:transform}
 .cover{height:160px;background-size:cover;background-position:center;background-color:#1e293b;position:relative;contain:layout style paint}
-.cover .ring-wrap{position:absolute;top:10px;left:10px;z-index:2}
+.cover .ring-wrap{position:absolute;top:10px;left:10px;z-index:2;background:rgba(2,6,23,.65);border-radius:50%;padding:3px;backdrop-filter:blur(8px)}
 .badges{position:absolute;top:10px;right:10px;display:flex;gap:5px}
 .badge{background:rgba(0,0,0,.55);backdrop-filter:blur(8px);color:#fff;font-size:10px;font-weight:600;padding:4px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em}
 .badge.sold{background:rgba(220,38,38,.8)}.badge.waitlist{background:rgba(234,88,12,.8)}.badge.open{background:rgba(34,197,94,.75)}
@@ -381,7 +400,8 @@ function buildCard(e){
   const ha=e.calendar_avatar||(e.hosts[0]||{}).avatar||'';
   const cats=(e.categories||[]).slice(0,3).map(c=>`<span class="cat">${esc(c)}</span>`).join('');
   const ringPlaceholder=activePerson?`<div class="ring-placeholder" data-score="${sc}" style="position:absolute;top:10px;left:10px;z-index:2;width:42px;height:42px"></div>`:'';
-  return `<div class="card" data-id="${esc(e.id)}" tabindex="0"><div class="cover" ${cov}>${ringPlaceholder}<div class="badges"><span class="badge ${s}">${stL(s)}</span></div></div><div class="body"><div class="title">${esc(e.name||'?')}</div><div class="meta"><div class="row">${iconCal()} ${esc(fD(e.start_at))}</div><div class="row">${iconPin()} ${esc(e.venue||e.city||'?')}${e.city&&e.venue?', '+esc(e.city):''}</div></div><div class="cats">${cats}</div><div class="host">${ha?`<img src="${esc(ha)}" loading="lazy" alt=""/>`:''}by ${esc(hn)}</div><div class="rsvp-strip"><span class="rsvp-count">${(e.guest_count||0).toLocaleString()} <span>RSVPs</span></span></div></div></div>`;
+  const isGoing=goingSet.has(e.id);
+  return `<div class="card${isGoing?' going':''}" data-id="${esc(e.id)}" tabindex="0"><div class="cover" ${cov}>${ringPlaceholder}<div class="badges"><span class="badge ${s}">${stL(s)}</span></div><div class="going-badge">Going</div></div><div class="body"><div class="title">${esc(e.name||'?')}</div><div class="meta"><div class="row">${iconCal()} ${esc(fD(e.start_at))}</div><div class="row">${iconPin()} ${esc(e.venue||e.city||'?')}${e.city&&e.venue?', '+esc(e.city):''}</div></div><div class="cats">${cats}</div><div class="host">${ha?`<img src="${esc(ha)}" loading="lazy" alt=""/>`:''}by ${esc(hn)}</div><div class="rsvp-strip"><span class="rsvp-count">${(e.guest_count||0).toLocaleString()} <span>RSVPs</span></span></div></div></div>`;
 }
 
 /* ── Hero ─────────────────────────────────────────────────────────────── */
@@ -481,7 +501,7 @@ function openModal(id){
   const s=st(e);const cov=e.cover_url?`style="background-image:url('${esc(e.cover_url)}');background-color:${esc(e.tint)}"`:`style="background-color:${esc(e.tint)}"`;
   const guests=(e.featured_guests||[]).map(g=>`<img src="${esc(g.avatar||'')}" title="${esc(g.name||'')}" alt=""/>`).join('');
   const desc=e.description_html||'<p style="color:#475569">No description.</p>';
-  S('#modal').innerHTML=`<div class="modal-wrap"><button class="close" onclick="closeModal()">&times;</button><div class="modal"><div class="cover" ${cov}><div class="badges"><span class="badge ${s}">${stL(s)}</span></div></div><div class="modal-body"><h2>${esc(e.name||'?')}</h2><div class="meta"><div class="row">${iconCal()} ${esc(fD(e.start_at))}</div><div class="row">${iconPin()} ${esc(e.full_address||e.venue||e.city||'')}</div></div>${scoresHtml(e)}${prepHtml(e)}${guests?`<div class="guests">${guests}</div>`:''}<div class="desc">${desc}</div><div class="actions"><a class="btn" href="${esc(e.url)}" target="_blank" rel="noopener" onclick="confetti(event)">RSVP on Luma</a><button class="btn ghost" onclick="closeModal()">Close</button></div></div></div></div>`;
+  S('#modal').innerHTML=`<div class="modal-wrap"><button class="close" onclick="closeModal()">&times;</button><div class="modal"><div class="cover" ${cov}><div class="badges"><span class="badge ${s}">${stL(s)}</span></div></div><div class="modal-body"><h2>${esc(e.name||'?')}</h2><div class="meta"><div class="row">${iconCal()} ${esc(fD(e.start_at))}</div><div class="row">${iconPin()} ${esc(e.full_address||e.venue||e.city||'')}</div></div>${scoresHtml(e)}${prepHtml(e)}${guests?`<div class="guests">${guests}</div>`:''}<div class="desc">${desc}</div><div class="actions"><button class="going-btn${goingSet.has(e.id)?' active':''}" id="modalGoingBtn" data-id="${esc(e.id)}" onclick="toggleGoing('${esc(e.id)}')">${goingSet.has(e.id)?'Going':'Mark as Going'}</button><a class="cal-btn" href="${esc(gcalUrl(e))}" target="_blank" rel="noopener" onclick="if(!goingSet.has('${esc(e.id)}'))toggleGoing('${esc(e.id)}')">Add to Calendar</a><a class="btn" href="${esc(e.url)}" target="_blank" rel="noopener" onclick="confetti(event)">RSVP on Luma</a><button class="btn ghost" onclick="closeModal()">Close</button></div></div></div></div>`;
   S('#modalBg').classList.add('open');document.body.style.overflow='hidden';
 }
 function closeModal(){S('#modalBg').classList.remove('open');document.body.style.overflow=''}
@@ -543,6 +563,42 @@ function renderPicks(){
   el.innerHTML=picks.map(p=>`<span class="pick-chip" onclick="openModal('${esc(p.id)}')">${esc((p.name||'').slice(0,30))}</span>`).join('');
   S('#picksCount').textContent=picks.length?`My Picks (${picks.length})`:'My Picks';
 }
+
+/* ── Going / Calendar ─────────────────────────────────────────────────── */
+const GOING_KEY='luma_going_events';
+let goingSet=new Set(JSON.parse(localStorage.getItem(GOING_KEY)||'[]'));
+function saveGoing(){localStorage.setItem(GOING_KEY,JSON.stringify([...goingSet]))}
+function toggleGoing(id,evt){
+  if(evt)evt.stopPropagation();
+  if(goingSet.has(id))goingSet.delete(id);else goingSet.add(id);
+  saveGoing();renderMyEvents();
+  // Update card visual
+  SA(`.card[data-id="${id}"]`).forEach(c=>c.classList.toggle('going',goingSet.has(id)));
+  // Update modal button if open
+  const btn=S('#modalGoingBtn');if(btn&&btn.dataset.id===id){btn.classList.toggle('active',goingSet.has(id));btn.textContent=goingSet.has(id)?'Going':'Mark as Going'}
+}
+function gcalUrl(e){
+  const start=(e.start_at||'').replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+  const end=(e.end_at||e.start_at||'').replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+  const title=encodeURIComponent(e.name||'Event');
+  const loc=encodeURIComponent(e.full_address||e.venue||(e.city?e.city+', CA':''));
+  const details=encodeURIComponent(`RSVP: ${e.url||''}\nHost: ${e.calendar_name||''}\n\nvia Luma Events Viewer`);
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&location=${loc}&details=${details}&add=ayushi999@gmail.com`;
+}
+function addToCalendar(id,evt){
+  if(evt)evt.stopPropagation();
+  const e=E.find(x=>x.id===id);if(!e)return;
+  if(!goingSet.has(id))toggleGoing(id);
+  window.open(gcalUrl(e),'_blank');
+}
+function renderMyEvents(){
+  const el=S('#myEvents'),list=S('#myEventsList');
+  const going=E.filter(e=>goingSet.has(e.id)).sort((a,b)=>(a.start_at||'').localeCompare(b.start_at||''));
+  if(!going.length){el.classList.remove('show');return}
+  el.classList.add('show');
+  list.innerHTML=going.map(e=>`<span class="my-event-chip" onclick="openModal('${esc(e.id)}')">${esc((e.name||'').slice(0,35))} <span style="color:#64748b;font-weight:400">${esc(fD(e.start_at).split(',')[0])}</span> <span class="remove" onclick="event.stopPropagation();toggleGoing('${esc(e.id)}')">&times;</span></span>`).join('');
+}
+window.toggleGoing=toggleGoing;window.addToCalendar=addToCalendar;
 
 /* ── Confetti ─────────────────────────────────────────────────────────── */
 function confetti(evt){
@@ -634,6 +690,7 @@ SA('.mode-btn').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode
 buildChips();
 setMode(isMobile?'swipe':'discover');
 animateStats();
+renderMyEvents();
 """
 
 
@@ -705,6 +762,10 @@ def build_html(data: dict, slimmed: list[dict]) -> str:
 
   <!-- Discover mode -->
   <div id="discoverView">
+    <div class="my-events" id="myEvents">
+      <h3>My Events</h3>
+      <div class="my-events-list" id="myEventsList"></div>
+    </div>
     <div class="hero" id="hero"></div>
     <div class="count" id="count"></div>
     <div id="grid"></div>
