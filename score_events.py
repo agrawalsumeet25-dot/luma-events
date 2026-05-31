@@ -117,8 +117,24 @@ def event_summary(record: dict) -> str:
     if hosts:
         lines.append(f"Hosts: {', '.join(h.get('name') or '?' for h in hosts[:5])}")
     if guests:
-        lines.append(f"Featured guests: {', '.join(g.get('name') or '?' for g in guests[:5])}")
-    lines.append(f"RSVPs: {det.get('guest_count', 0)}")
+        guest_parts = []
+        for g in guests[:5]:
+            name = g.get("name") or "?"
+            bio = (g.get("bio_short") or "").strip()
+            guest_parts.append(f"{name} ({bio[:80]})" if bio else name)
+        lines.append(f"Featured guests: {'; '.join(guest_parts)}")
+
+    loc_type = ev.get("location_type") or det_ev.get("location_type") or "unknown"
+    capacity = det.get("ticket_count") or 0
+    rsvps = det.get("guest_count", 0)
+    sold_out = det.get("sold_out", False)
+    waitlist = det.get("waitlist_active", False)
+    reg = det.get("registration_availability") or "unknown"
+    scale = "small (intimate)" if capacity and capacity <= 30 else "medium" if capacity and capacity <= 150 else "large" if capacity else "unknown size"
+    lines.append(f"Format: {loc_type}, {scale}")
+    lines.append(f"RSVPs: {rsvps}" + (f" / {capacity} capacity" if capacity else ""))
+    if sold_out or waitlist or reg in ("sold-out", "waitlist"):
+        lines.append(f"Availability: {'SOLD OUT' if sold_out else 'Waitlist only'}")
     if desc_text:
         lines.append(f"Description:\n{desc_text}")
 
@@ -145,18 +161,45 @@ def build_prompt(profiles: dict[str, str], event_text: str) -> str:
 EVENT:
 {event_text}
 
-Score this event 0-100 for EACH person. Consider:
-- How relevant is the topic to their specific interests and goals?
-- Would attending help their current objectives?
-- Is the event high-quality (reputable host, strong attendance, good speakers)?
-- For job seekers: does the event offer networking with potential employers?
+Score this event 0-100 for EACH person. Weight these factors:
+
+RELEVANCE (50% of score):
+- How precisely does the topic match their CORE interests (not just same broad domain)?
+- Check the person's Low Interest list -- events matching those should score 5-20.
+
+NETWORKING VALUE (25% of score):
+- Who specifically will be there? Named speakers/guests with relevant titles matter.
+- For job seekers: face-time with hiring managers at target companies?
+- Small/intimate events (under 30 people) with senior attendees score higher than large generic ones.
+
+QUALITY & LOGISTICS (15% of score):
+- Reputable host? Strong attendance relative to capacity?
+- Is it actually available (not sold out or waitlist-only)?
+
+FORMAT FIT (10% of score):
+- In-person events score higher than virtual for networking.
+- Hackathons/workshops score higher than passive talks for builders.
+
+HARD RULES (apply after calculating base score):
+- If SOLD OUT or waitlist-only, cap score at 40 max.
+- If virtual/online, reduce networking value component by half.
+- If a featured guest or host is from a target company, add +10.
+- Do NOT apply a "minimum floor". Wrong-domain events should score 3-10, not 15-25.
+- Engineering-only events (agent infra, vector DBs, MLOps) with no design relevance = 10-20 for designers.
+- Pure design/UX events with no AI angle = 5-15 for engineers.
+
+CALIBRATION:
+- Use the FULL 0-100 scale. Do not round to multiples of 5.
+- Use odd numbers: 37, 63, 81 are better than 35, 65, 80.
+- If 5 events are "vaguely relevant networking", they should NOT all get the same score.
 
 Scoring guide:
-- 90-100: Must-attend. Directly aligned with core interests/goals.
-- 70-89: Strongly recommended. Clearly relevant.
-- 50-69: Worth considering. Tangentially relevant or good networking.
-- 30-49: Low relevance. Only attend if nothing better.
-- 0-29: Not relevant. Wrong domain or audience.
+- 90-100: Must-attend. Core topic + exceptional speakers + right format.
+- 75-89: Strong recommendation. Clearly relevant topic with good networking.
+- 60-74: Worth considering. Relevant but generic, or tangential with great people.
+- 40-59: Marginal. Only tangentially related.
+- 20-39: Low relevance. Wrong audience or domain.
+- 0-19: Not relevant at all. Completely different field.
 
 Respond ONLY with valid JSON, no other text:
 {{{response_schema}}}"""
