@@ -32,7 +32,7 @@ CACHE_PATH = OUT_DIR / "scores_cache.json"
 
 MAX_WORKERS = 20
 MODEL = "claude-sonnet-4-6"
-MAX_TOKENS = 512
+MAX_TOKENS = 768
 MAX_DESC_CHARS = 1500
 
 
