@@ -269,7 +269,7 @@ h1{font-family:var(--fi);font-size:44px;font-weight:400;font-style:normal;letter
 .section{opacity:0;transform:translateY(16px);transition:opacity .5s var(--eo),transform .5s var(--eo);content-visibility:auto;contain-intrinsic-size:auto 600px}
 .section.visible{opacity:1;transform:translateY(0)}
 .section .grid .card{opacity:0;transform:translateY(10px);transition:opacity .4s var(--eo),transform .4s var(--eo)}
-.section.visible .grid .card{opacity:1;transform:translateY(0)}
+.section.visible .grid .card{opacity:1;transform:translateY(0);will-change:auto}
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
 @media(max-width:768px){.grid{grid-template-columns:1fr;gap:12px}}
@@ -299,12 +299,12 @@ h1{font-family:var(--fi);font-size:44px;font-weight:400;font-style:normal;letter
 .card{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;cursor:pointer;display:flex;flex-direction:column;position:relative;height:380px;transition:border-color .3s var(--eo),box-shadow .3s var(--eo);contain:layout style}
 .card:active{transform:scale(.99)}
 @media(hover:hover)and(pointer:fine){.card:hover{border-color:var(--bh);box-shadow:0 8px 32px rgba(0,0,0,.15)}}
-.cover{position:absolute;inset:0;background-size:cover;background-position:center;background-color:var(--surface);contain:strict}
+.cover{position:absolute;inset:0;background-color:var(--surface);contain:strict;overflow:hidden}
 .cover .ring-wrap{position:absolute;top:14px;left:14px;z-index:3;background:rgba(17,17,16,.8);border-radius:50%;padding:3px}
 .badges{position:absolute;top:14px;right:14px;display:flex;gap:6px;z-index:2}
 .badge{background:rgba(17,17,16,.75);color:var(--text);font-size:10px;font-weight:600;padding:4px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:.06em}
 .badge.sold{background:rgba(209,69,59,.8)}.badge.waitlist{background:rgba(234,88,12,.8)}.badge.open{background:rgba(45,184,122,.7)}
-.body{position:absolute;bottom:0;left:0;right:0;padding:24px;display:flex;flex-direction:column;gap:6px;background:linear-gradient(to top,rgba(17,17,16,.9) 0%,rgba(17,17,16,.5) 50%,transparent 100%);z-index:1}
+.body{position:absolute;bottom:0;left:0;right:0;padding:24px;display:flex;flex-direction:column;gap:6px;background:linear-gradient(to top,rgba(17,17,16,.88),transparent);z-index:1}
 .title{font-family:var(--fd);font-size:18px;font-weight:700;color:#fff;line-height:1.25;text-shadow:0 1px 3px rgba(0,0,0,.3)}
 .meta{display:flex;flex-direction:column;gap:3px;font-size:12px;color:rgba(255,255,255,.6)}
 .meta .row{display:flex;align-items:center;gap:6px}
@@ -344,7 +344,7 @@ h1{font-family:var(--fi);font-size:44px;font-weight:400;font-style:normal;letter
 .pick-chip:active{transform:scale(.97)}
 @media(hover:hover)and(pointer:fine){.pick-chip:hover{border-color:var(--pos)}}
 
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(17,17,16,.9);backdrop-filter:blur(16px);z-index:100;align-items:flex-start;justify-content:center;padding:48px 24px;overflow-y:auto}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(17,17,16,.95);z-index:100;align-items:flex-start;justify-content:center;padding:48px 24px;overflow-y:auto}
 .modal-bg.open{display:flex}
 @media(max-width:640px){.modal-bg{padding:0;align-items:flex-end}.modal-bg .modal-wrap{max-width:100%}.modal-bg .modal{border-radius:var(--rl) var(--rl) 0 0;max-height:92vh;overflow-y:auto}}
 .modal-wrap{position:relative;width:100%;max-width:720px}
@@ -387,7 +387,7 @@ h1{font-family:var(--fi);font-size:44px;font-weight:400;font-style:normal;letter
 @media(hover:hover)and(pointer:fine){.prep-starters li:hover{border-color:var(--bh)}}
 
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(71,85,105,.2);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:rgba(71,85,105,.35)}
-.cmd-bg{display:none;position:fixed;inset:0;background:rgba(17,17,16,.85);backdrop-filter:blur(8px);z-index:150;align-items:flex-start;justify-content:center;padding:18vh 24px 24px}
+.cmd-bg{display:none;position:fixed;inset:0;background:rgba(17,17,16,.92);z-index:150;align-items:flex-start;justify-content:center;padding:18vh 24px 24px}
 .cmd-bg.open{display:flex}
 .cmd-box{width:100%;max-width:560px;background:rgba(24,24,22,.98);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;box-shadow:0 32px 96px rgba(0,0,0,.5)}
 .cmd-input{width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);padding:18px 24px;font-size:15px;color:var(--text);font-family:var(--fb);outline:none}
@@ -430,11 +430,12 @@ function iconPin(){return '<svg class="icon" viewBox="0 0 24 24" fill="none" str
 
 function buildCard(e){
   const s=st(e),sc=activePerson?gS(e,activePerson):0;
-  const cov=e.cover_url?`style="background-image:url('${esc(e.cover_url)}');background-color:${esc(e.tint)}"`:`style="background-color:${esc(e.tint)}"`;
+  const covImg=e.cover_url?`<img src="${esc(e.cover_url)}" loading="lazy" decoding="async" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"/>`:'';
+  const covBg=`style="background-color:${esc(e.tint)}"`;
   const hn=e.calendar_name||(e.hosts[0]||{}).name||'';
   const ringPh=activePerson?`<div class="ring-placeholder" data-score="${sc}" style="position:absolute;top:14px;left:14px;z-index:3;width:42px;height:42px"></div>`:'';
   const isGoing=goingSet.has(e.id);
-  return `<div class="card${isGoing?' going':''}" data-id="${esc(e.id)}" tabindex="0"><div class="cover" ${cov}>${ringPh}<div class="badges"><span class="badge ${s}">${stL(s)}</span></div><div class="going-badge">Going</div></div><div class="body"><div class="title">${esc(e.name||'?')}</div><div class="meta"><div class="row">${iconCal()} ${esc(fD(e.start_at))}</div><div class="row">${iconPin()} ${esc(e.venue||e.city||'?')}${e.city&&e.venue?', '+esc(e.city):''}</div></div><div class="rsvp-strip"><span class="rsvp-count">${(e.guest_count||0).toLocaleString()} <span>RSVPs</span></span></div></div></div>`;
+  return `<div class="card${isGoing?' going':''}" data-id="${esc(e.id)}" tabindex="0"><div class="cover" ${covBg}>${covImg}${ringPh}<div class="badges"><span class="badge ${s}">${stL(s)}</span></div><div class="going-badge">Going</div></div><div class="body"><div class="title">${esc(e.name||'?')}</div><div class="meta"><div class="row">${iconCal()} ${esc(fD(e.start_at))}</div><div class="row">${iconPin()} ${esc(e.venue||e.city||'?')}${e.city&&e.venue?', '+esc(e.city):''}</div></div><div class="rsvp-strip"><span class="rsvp-count">${(e.guest_count||0).toLocaleString()} <span>RSVPs</span></span></div></div></div>`;
 }
 
 /* Summary */
@@ -467,16 +468,21 @@ function renderHero(){
 const sectionObs=new IntersectionObserver(entries=>{
   entries.forEach(entry=>{
     if(entry.isIntersecting){
+      // Hydrate section if it has deferred content
+      const render=entry.target._deferredRender;
+      if(render){entry.target.querySelector('.grid').innerHTML=render();delete entry.target._deferredRender}
       entry.target.classList.add('visible');
       const cards=entry.target.querySelectorAll('.card');
       cards.forEach((c,i)=>{c.style.transitionDelay=`${Math.min(i*50,400)}ms`});
       entry.target.querySelectorAll('.ring-placeholder').forEach(ph=>{
         const sc=parseInt(ph.dataset.score)||0;ph.innerHTML=ring(sc,'sm');ph.classList.remove('ring-placeholder');
       });
+      // Attach click handlers after hydration
+      cards.forEach(c=>{c.addEventListener('click',()=>openModal(c.dataset.id));c.addEventListener('keydown',ev=>{if(ev.key==='Enter')openModal(c.dataset.id)})});
       sectionObs.unobserve(entry.target);
     }
   });
-},{rootMargin:'100px 0px',threshold:0.01});
+},{rootMargin:'200px 0px',threshold:0.01});
 
 /* Discover */
 function filterAndRender(){
@@ -501,19 +507,30 @@ function filterAndRender(){
   list.forEach(e=>{const g=relDay(e.start_at);(groups[g]||groups.later).push(e)});
   const labels={today:'Happening Today',tomorrow:'Tomorrow',week:'This Week',month:'This Month',later:'Later'};
   const frag=document.createDocumentFragment();
+  let sectionIdx=0;
   for(const[k,lbl]of Object.entries(labels)){
     const evts=groups[k];if(!evts||!evts.length)continue;
     const section=document.createElement('div');
     section.className='section';
     section.dataset.period=k;
-    section.innerHTML=`<div class="section-header">${lbl} <span style="color:var(--t4);font-weight:400;font-size:13px">(${evts.length})</span></div><div class="grid">${evts.map(buildCard).join('')}</div>`;
+    const headerHtml=`<div class="section-header">${lbl} <span style="color:var(--t4);font-weight:400;font-size:13px">(${evts.length})</span></div>`;
+    if(sectionIdx<2){
+      // Render first 2 sections immediately
+      section.innerHTML=headerHtml+`<div class="grid">${evts.map(buildCard).join('')}</div>`;
+    }else{
+      // Defer remaining sections — render on scroll
+      section.innerHTML=headerHtml+`<div class="grid"></div>`;
+      section._deferredRender=()=>evts.map(buildCard).join('');
+    }
     frag.appendChild(section);
     requestAnimationFrame(()=>sectionObs.observe(section));
+    sectionIdx++;
   }
   grid.innerHTML='';
   grid.appendChild(frag);
   S('#count').textContent=`${list.length} of ${E.length} events`;
-  SA('.card').forEach(c=>{c.addEventListener('click',()=>openModal(c.dataset.id));c.addEventListener('keydown',ev=>{if(ev.key==='Enter')openModal(c.dataset.id)})});
+  // Only attach handlers to immediately-rendered cards (deferred ones get handlers on hydration)
+  SA('.section:nth-child(-n+2) .card').forEach(c=>{c.addEventListener('click',()=>openModal(c.dataset.id));c.addEventListener('keydown',ev=>{if(ev.key==='Enter')openModal(c.dataset.id)})});
   renderHero();
 }
 
@@ -535,7 +552,7 @@ function openModal(id){
   const s=st(e);const cov=e.cover_url?`style="background-image:url('${esc(e.cover_url)}');background-color:${esc(e.tint)}"`:`style="background-color:${esc(e.tint)}"`;
   const guests=(e.featured_guests||[]).map(g=>`<img src="${esc(g.avatar||'')}" title="${esc(g.name||'')}" alt=""/>`).join('');
   const desc=e.description_html||'<p style="color:var(--t4)">No description.</p>';
-  S('#modal').innerHTML=`<div class="modal-wrap"><button class="close" onclick="closeModal()">&#215;</button><div class="modal"><div class="cover" ${cov}><div class="badges"><span class="badge ${s}">${stL(s)}</span></div></div><div class="modal-body"><h2>${esc(e.name||'?')}</h2><div class="meta"><div class="row">${iconCal()} ${esc(fD(e.start_at))}</div><div class="row">${iconPin()} ${esc(e.full_address||e.venue||e.city||'')}</div></div>${scoresHtml(e)}${prepHtml(e)}${guests?`<div class="guests">${guests}</div>`:''}<div class="desc">${desc}</div><div class="actions"><button class="going-btn${goingSet.has(e.id)?' active':''}" id="modalGoingBtn" data-id="${esc(e.id)}" onclick="toggleGoing('${esc(e.id)}')">${goingSet.has(e.id)?'Going':'Mark as Going'}</button><a class="cal-btn" href="${esc(gcalUrl(e))}" target="_blank" rel="noopener" onclick="if(!goingSet.has('${esc(e.id)}'))toggleGoing('${esc(e.id)}')">Add to Calendar</a><a class="btn" href="${esc(e.url)}" target="_blank" rel="noopener">RSVP on Luma</a><button class="btn ghost" onclick="closeModal()">Close</button></div></div></div></div>`;
+  S('#modal').innerHTML=`<div class="modal-wrap"><button class="close" onclick="closeModal()">&#215;</button><div class="modal"><div class="cover" ${covBg}>${covImg}<div class="badges"><span class="badge ${s}">${stL(s)}</span></div></div><div class="modal-body"><h2>${esc(e.name||'?')}</h2><div class="meta"><div class="row">${iconCal()} ${esc(fD(e.start_at))}</div><div class="row">${iconPin()} ${esc(e.full_address||e.venue||e.city||'')}</div></div>${scoresHtml(e)}${prepHtml(e)}${guests?`<div class="guests">${guests}</div>`:''}<div class="desc">${desc}</div><div class="actions"><button class="going-btn${goingSet.has(e.id)?' active':''}" id="modalGoingBtn" data-id="${esc(e.id)}" onclick="toggleGoing('${esc(e.id)}')">${goingSet.has(e.id)?'Going':'Mark as Going'}</button><a class="cal-btn" href="${esc(gcalUrl(e))}" target="_blank" rel="noopener" onclick="if(!goingSet.has('${esc(e.id)}'))toggleGoing('${esc(e.id)}')">Add to Calendar</a><a class="btn" href="${esc(e.url)}" target="_blank" rel="noopener">RSVP on Luma</a><button class="btn ghost" onclick="closeModal()">Close</button></div></div></div></div>`;
   S('#modalBg').classList.add('open');document.body.style.overflow='hidden';
 }
 function closeModal(){S('#modalBg').classList.remove('open');document.body.style.overflow=''}
@@ -586,7 +603,7 @@ function renderSwipe(){
     card.className='swipe-card';
     card.style.zIndex=i+1;
     if(!isTop){card.style.transform=`scale(${1-(.03*(show.length-1-i))}) translateY(${(show.length-1-i)*8}px)`;card.style.opacity=.7+i*.15}
-    card.innerHTML=`<div class="s-cover" style="background-image:url('${esc(e.cover_url)}');background-color:${esc(e.tint)}"><div class="badges"><span class="badge ${st(e)}">${stL(st(e))}</span></div><div class="swipe-flash like">Like</div><div class="swipe-flash nope">Nope</div>${activePerson?`<div style="position:absolute;bottom:12px;left:12px">${ring(sc,'sm')}</div>`:''}</div><div class="s-body"><div class="s-title">${esc(e.name)}</div><div class="s-meta"><div>${esc(fD(e.start_at))}</div><div>${esc(e.city||'?')}</div></div><div class="s-host">by ${esc(e.calendar_name)}</div></div>`;
+    card.innerHTML=`<div class="s-cover" style="background-color:${esc(e.tint)}"><img src="${esc(e.cover_url)}" loading="lazy" decoding="async" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"><div class="badges"><span class="badge ${st(e)}">${stL(st(e))}</span></div><div class="swipe-flash like">Like</div><div class="swipe-flash nope">Nope</div>${activePerson?`<div style="position:absolute;bottom:12px;left:12px">${ring(sc,'sm')}</div>`:''}</div><div class="s-body"><div class="s-title">${esc(e.name)}</div><div class="s-meta"><div>${esc(fD(e.start_at))}</div><div>${esc(e.city||'?')}</div></div><div class="s-host">by ${esc(e.calendar_name)}</div></div>`;
     if(isTop)setupDrag(card,e);
     stack.appendChild(card);
   });
