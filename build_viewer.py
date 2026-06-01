@@ -299,7 +299,7 @@ h1{font-family:var(--fi);font-size:44px;font-weight:400;font-style:normal;letter
 .card{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;cursor:pointer;display:flex;flex-direction:column;position:relative;height:380px;transition:border-color .3s var(--eo),box-shadow .3s var(--eo);contain:layout style}
 .card:active{transform:scale(.99)}
 @media(hover:hover)and(pointer:fine){.card:hover{border-color:var(--bh);box-shadow:0 8px 32px rgba(0,0,0,.15)}}
-.cover{position:absolute;inset:0;background-color:var(--surface);contain:strict;overflow:hidden}
+.cover{position:absolute;inset:0;background-color:var(--surface);overflow:hidden}
 .cover .ring-wrap{position:absolute;top:14px;left:14px;z-index:3;background:rgba(0,0,0,.85);border-radius:50%;padding:5px;box-shadow:0 2px 10px rgba(0,0,0,.6),0 0 0 2px rgba(255,255,255,.1)}
 .badges{position:absolute;top:14px;right:14px;display:flex;gap:6px;z-index:2}
 .badge{background:rgba(17,17,16,.75);color:var(--text);font-size:10px;font-weight:600;padding:4px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:.06em}
@@ -477,8 +477,7 @@ const sectionObs=new IntersectionObserver(entries=>{
       entry.target.querySelectorAll('.ring-placeholder').forEach(ph=>{
         const sc=parseInt(ph.dataset.score)||0;ph.innerHTML=ring(sc,'sm');ph.classList.remove('ring-placeholder');
       });
-      // Attach click handlers after hydration
-      cards.forEach(c=>{c.addEventListener('click',()=>openModal(c.dataset.id));c.addEventListener('keydown',ev=>{if(ev.key==='Enter')openModal(c.dataset.id)})});
+      // Click handlers attached via event delegation on #grid (see init)
       sectionObs.unobserve(entry.target);
     }
   });
@@ -529,8 +528,6 @@ function filterAndRender(){
   grid.innerHTML='';
   grid.appendChild(frag);
   S('#count').textContent=`${list.length} of ${E.length} events`;
-  // Only attach handlers to immediately-rendered cards (deferred ones get handlers on hydration)
-  SA('.section:nth-child(-n+2) .card').forEach(c=>{c.addEventListener('click',()=>openModal(c.dataset.id));c.addEventListener('keydown',ev=>{if(ev.key==='Enter')openModal(c.dataset.id)})});
   renderHero();
 }
 
@@ -549,10 +546,12 @@ function prepHtml(e){
 }
 function openModal(id){
   const e=E.find(x=>x.id===id);if(!e)return;
-  const s=st(e);const cov=e.cover_url?`style="background-image:url('${esc(e.cover_url)}');background-color:${esc(e.tint)}"`:`style="background-color:${esc(e.tint)}"`;
+  const s=st(e);
+  const modalCovBg=`style="background-color:${esc(e.tint)}"`;
+  const modalCovImg=e.cover_url?`<img src="${esc(e.cover_url)}" decoding="async" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"/>`:'';
   const guests=(e.featured_guests||[]).map(g=>`<img src="${esc(g.avatar||'')}" title="${esc(g.name||'')}" alt=""/>`).join('');
   const desc=e.description_html||'<p style="color:var(--t4)">No description.</p>';
-  S('#modal').innerHTML=`<div class="modal-wrap"><button class="close" onclick="closeModal()">&#215;</button><div class="modal"><div class="cover" ${covBg}>${covImg}<div class="badges"><span class="badge ${s}">${stL(s)}</span></div></div><div class="modal-body"><h2>${esc(e.name||'?')}</h2><div class="meta"><div class="row">${iconCal()} ${esc(fD(e.start_at))}</div><div class="row">${iconPin()} ${esc(e.full_address||e.venue||e.city||'')}</div></div>${scoresHtml(e)}${prepHtml(e)}${guests?`<div class="guests">${guests}</div>`:''}<div class="desc">${desc}</div><div class="actions"><button class="going-btn${goingSet.has(e.id)?' active':''}" id="modalGoingBtn" data-id="${esc(e.id)}" onclick="toggleGoing('${esc(e.id)}')">${goingSet.has(e.id)?'Going':'Mark as Going'}</button><a class="cal-btn" href="${esc(gcalUrl(e))}" target="_blank" rel="noopener" onclick="if(!goingSet.has('${esc(e.id)}'))toggleGoing('${esc(e.id)}')">Add to Calendar</a><a class="btn" href="${esc(e.url)}" target="_blank" rel="noopener">RSVP on Luma</a><button class="btn ghost" onclick="closeModal()">Close</button></div></div></div></div>`;
+  S('#modal').innerHTML=`<div class="modal-wrap"><button class="close" onclick="closeModal()">&#215;</button><div class="modal"><div class="cover" ${modalCovBg}>${modalCovImg}<div class="badges"><span class="badge ${s}">${stL(s)}</span></div></div><div class="modal-body"><h2>${esc(e.name||'?')}</h2><div class="meta"><div class="row">${iconCal()} ${esc(fD(e.start_at))}</div><div class="row">${iconPin()} ${esc(e.full_address||e.venue||e.city||'')}</div></div>${scoresHtml(e)}${prepHtml(e)}${guests?`<div class="guests">${guests}</div>`:''}<div class="desc">${desc}</div><div class="actions"><button class="going-btn${goingSet.has(e.id)?' active':''}" id="modalGoingBtn" data-id="${esc(e.id)}" onclick="toggleGoing('${esc(e.id)}')">${goingSet.has(e.id)?'Going':'Mark as Going'}</button><a class="cal-btn" href="${esc(gcalUrl(e))}" target="_blank" rel="noopener" onclick="if(!goingSet.has('${esc(e.id)}'))toggleGoing('${esc(e.id)}')">Add to Calendar</a><a class="btn" href="${esc(e.url)}" target="_blank" rel="noopener">RSVP on Luma</a><button class="btn ghost" onclick="closeModal()">Close</button></div></div></div></div>`;
   S('#modalBg').classList.add('open');document.body.style.overflow='hidden';
 }
 function closeModal(){S('#modalBg').classList.remove('open');document.body.style.overflow=''}
@@ -642,7 +641,7 @@ function renderPicks(){
   el.innerHTML=picks.map(p=>`<span class="pick-chip" onclick="openModal('${esc(p.id)}')">${esc((p.name||'').slice(0,30))}</span>`).join('');
   S('#picksCount').textContent=picks.length?`My Picks (${picks.length})`:'My Picks';
 }
-window.undoSwipe=undoSwipe;
+window.undoSwipe=undoSwipe;window.swipeAction=swipeAction;
 
 /* Mode */
 function setMode(m){
@@ -720,6 +719,11 @@ document.addEventListener('keydown',e=>{
 });
 
 /* Init */
+// Event delegation: single listener handles all card clicks (including deferred sections)
+S('#grid').addEventListener('click',e=>{
+  const card=e.target.closest('.card');
+  if(card&&card.dataset.id)openModal(card.dataset.id);
+});
 S('#modalBg').addEventListener('click',e=>{if(e.target.id==='modalBg')closeModal()});
 S('#cmdBg').addEventListener('click',e=>{if(e.target.id==='cmdBg')closeCmd()});
 S('#cmdInput').addEventListener('input',e=>cmdSearch(e.target.value));
